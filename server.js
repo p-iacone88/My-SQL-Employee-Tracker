@@ -87,5 +87,25 @@ switch (select) {
                 message: 'Please Enter Department of New Role : ',
               },
             ]);
+
+            const { roleName, roleSalary, roleDepartment } = returnedInquirerOutput;
+
+            const returnDepartmentId = db.query(`
+            SELECT IF NULL((SELECT id FROM department WHERE name = '${roleDepartment}'), 'Department doesn't exist')
+            `);
+
+            const [rows] = returnDepartmentId;
+            const department_id = Object.values(rows[0]) [0];
+
+            if (department_id === 'Department Does Not Exist') {
+              console.log('Please Enter a Role in an Existing Department.');
+              break;
+            }
+
+            returnedDbRows = db.query(
+              `INSERT INTO role (job_title, salary, department_id)
+              VALUES ('${roleName}' '${roleSalary}', '${department_id}');`
+            );
+            break;
 }
 
