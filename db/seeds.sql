@@ -7,12 +7,12 @@ VALUES ('Recording Studio'),
        ('Maintenance')
 
 INSERT INTO role (job_title, salary, department_id)
-VALUES ('Head Recording Engineer', 50000, 1),
-       ('Assistant Recording Engineer', 40000, 1),
-       ('Intern Recording Engineer', 25000, 1),
-       ('Head Mixing Engineer', 55000, 2),       
-       ('Assistant Mixing Engineer', 45000, 2),  
-       ('Head Mastering Engineer', 60000, 3),  
+VALUES ('Head Recording Engineer', 75000, 1),
+       ('Assistant Recording Engineer', 55000, 1),
+       ('Intern Recording Engineer', 32000, 1),
+       ('Head Mixing Engineer', 75000, 2),       
+       ('Assistant Mixing Engineer', 55000, 2),  
+       ('Head Mastering Engineer', 77000, 3),  
        ('Assistant Mastering Engineer', 55000, 3),  
        ('Equipment Maintenance Manager', 45000, 4),  
        ('Equipment Maintenance Tech', 38000, 4),  
