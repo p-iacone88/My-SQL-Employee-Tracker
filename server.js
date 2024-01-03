@@ -44,5 +44,48 @@ switch (select) {
         console.table(returnedDbRows[0]);
         break;
 
+        case 'Add a Department':
+          returnedInquirerOutput = inquirer.prompt([
+            {
+            name: 'department',
+            message: 'Please enter a new department name: '
+            },
+          ]);
+
+          try {
+            // Check if the department exists
+            const existingDepartment = await db.query(
+              `SELECT id FROM department WHERE name = '${returnedInquirerOutput.department}'`
+            );
+          
+            if (existingDepartment.length === 0) {
+              // Department does not exist, proceed with insertion
+              returnedDbRows = await db.query(
+                `INSERT INTO department (name) VALUES ('${returnedInquirerOutput.department}')`
+              );
+            } else {
+              console.log('Department already exists');
+              // Handle duplicate department name
+            }
+          } catch (error) {
+            console.log('Error occurred:', error);
+          }
+          break;
+
+          case 'Add a Role':
+            returnedInquirerOutput = await inquirer.prompt([
+              {
+                name: 'roleName',
+                message: 'Please Enter the New Role Name: ',
+              }, 
+              {
+                name: 'roleSalary',
+                message: 'Please Enter Salary for the New Role: ',
+              },
+              {
+                name: 'roleDepartment',
+                message: 'Please Enter Department of New Role : ',
+              },
+            ]);
 }
 
