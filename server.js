@@ -249,6 +249,36 @@ switch (select) {
   }
   break;
 
+  case 'View Employees by Department':
+  try {
+    const [departments] = await db.query(`SELECT * FROM department`);
+    const departmentChoices = departments.map((dept) => ({
+      name: dept.department_name,
+      value: dept.id,
+    }));
+
+    const selectedDepartment = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'departmentId',
+        message: 'Please choose a department:',
+        choices: departmentChoices,
+      },
+    ]);
+
+    const [employeesByDepartment] = await db.query(`
+      SELECT employee.id, employee.first_name, employee.last_name, role.job_title AS title
+      FROM employee
+      JOIN role ON employee.role_id = role.id
+      WHERE role.department_id = ?
+    `, [selectedDepartment.departmentId]);
+
+    console.table(employeesByDepartment);
+  } catch (error) {
+    console.log('Error occurred:', error);
+  }
+  break;
+
     }
   } catch (err) {
     console.log(err);
@@ -273,6 +303,7 @@ async function userPrompt() {
           "Add an Employee",
           "Update Employee Role",
           "View Employees by Manager",
+          "View Employees by Department",
           new inquirer.Separator(),
           "Quit",
         ],

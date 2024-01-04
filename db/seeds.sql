@@ -23,10 +23,10 @@ VALUES ('Head Recording Engineer', 75000, 1),
 INSERT INTO employee (first_name, last_name, role_id, manager_id)
 VALUES ('Brian', 'Wilson', 1, NULL),
        ('Dennis', 'Wilson', 2, 1),
-       ('Carl', 'Wilson', 3, 2),
+       ('Carl', 'Wilson', 2, 1),
        ('Mike', 'Love', 4, NULL),
        ('Alan', 'Jardine', 5, 4),
        ('Bruce', 'Johnston', 6, 2),
        ('David', 'Marks', 7, 6),
        ('Blondie', 'Chaplin', 8, 6),
-       ('Ricky', 'Fataar', 9, NULL);
+       ('Ricky', 'Fataar', 9, 2);
