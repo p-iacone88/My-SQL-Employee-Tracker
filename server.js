@@ -74,43 +74,46 @@ switch (select) {
           break;
 
           case 'Add a Role':
-            returnedInquirerOutput = await inquirer.prompt([
-              {
-                name: 'roleName',
-                message: 'Please Enter the New Role Name: ',
-              }, 
-              {
-                name: 'roleSalary',
-                message: 'Please Enter Salary for the New Role: ',
-              },
-              {
-                name: 'roleDepartment',
-                message: 'Please Enter Department of New Role: ',
-              },
-            ]);
+  returnedInquirerOutput = await inquirer.prompt([
+    {
+      name: 'roleName',
+      message: 'Please Enter the New Role Name: ',
+    },
+    {
+      name: 'roleSalary',
+      message: 'Please Enter Salary for the New Role: ',
+    },
+    {
+      name: 'roleDepartment',
+      message: 'Please Enter Department of New Role: ',
+    },
+  ]);
 
-            const { roleName, roleSalary, roleDepartment } = returnedInquirerOutput;
+  const { roleName, roleSalary, roleDepartment } = returnedInquirerOutput;
 
-            try {
-              const returnDepartmentId = await db.query(`
-                SELECT IFNULL((SELECT id FROM department WHERE department_name = '${roleDepartment}'), -1) AS department_id
-              `);
-          
-              const department_id = returnDepartmentId[0].department_id;
-          
-              if (department_id === -1) {
-                console.log('Please Enter a Role in an Existing Department.');
-                break;
-              }
-          
-              returnedDbRows = await db.query(`
-                INSERT INTO role (job_title, salary, department_id)
-                VALUES ('${roleName}', ${roleSalary}, ${department_id})
-              `);
-            } catch (error) {
-              console.log('Error occurred:', error);
-            }
-            break;
+  try {
+    const [departmentRows] = await db.query(
+      `SELECT id FROM department WHERE department_name = ?`,
+      [roleDepartment]
+    );
+
+    if (departmentRows.length > 0) {
+      const department_id = departmentRows[0].id;
+
+      returnedDbRows = await db.query(
+        `INSERT INTO role (job_title, salary, department_id) VALUES (?, ?, ?)`,
+        [roleName, roleSalary, department_id]
+      );
+
+      console.log('Role added successfully!');
+    } else {
+      console.log('Department not found.'); // Handle when department does not exist
+    }
+  } catch (error) {
+    console.log('Error occurred:', error);
+  }
+  break;
+
           
             case "Add an Employee":
   returnedInquirerOutput = await inquirer.prompt([
