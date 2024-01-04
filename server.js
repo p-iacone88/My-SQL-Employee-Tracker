@@ -1,7 +1,7 @@
 // Import and require inquirer
 const inquirer = require('inquirer');
 // Import and require mysql2
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 
 // Connect to database
 
@@ -47,22 +47,23 @@ switch (select) {
         case 'Add a Department':
           returnedInquirerOutput = await inquirer.prompt([
             {
-            name: 'department',
-            message: 'Please enter a new department name: '
+              name: 'department',
+              message: 'Please enter a new department name: '
             },
           ]);
-
+        
           try {
             // Check if the department exists
-            const existingDepartment = db.query(
-              `SELECT id FROM department WHERE name = '${returnedInquirerOutput.department}'`
+            const [existingDepartment] = await db.query(
+              `SELECT id FROM department WHERE department_name = '${returnedInquirerOutput.department}'`
             );
-          
+        
             if (existingDepartment.length === 0) {
               // Department does not exist, proceed with insertion
               returnedDbRows = await db.query(
-                `INSERT INTO department (name) VALUES ('${returnedInquirerOutput.department}')`
+                `INSERT INTO department (department_name) VALUES ('${returnedInquirerOutput.department}')`
               );
+              console.log('Department added successfully!');
             } else {
               console.log('Department already exists');
               // Handle duplicate department name
@@ -92,7 +93,7 @@ switch (select) {
 
             try {
               const returnDepartmentId = await db.query(`
-                SELECT IFNULL((SELECT id FROM department WHERE name = '${roleDepartment}'), -1) AS department_id
+                SELECT IFNULL((SELECT id FROM department WHERE department_name = '${roleDepartment}'), -1) AS department_id
               `);
           
               const department_id = returnDepartmentId[0].department_id;
@@ -112,46 +113,51 @@ switch (select) {
             break;
           
             case "Add an Employee":
-              returnedInquirerOutput = await inquirer.prompt([
-                {
-                  name: "first_name",
-                  message: "Please Enter New Employee's First Name:",
-                },
-                {
-                  name: "last_name",
-                  message: "Please Enter New Employee's Last Name:",
-                },
-                {
-                  name: "role",
-                  message: "Please Enter New Employee's Role:",
-                },
-                {
-                  name: "manager",
-                  message: "Please Enter New Employee's Manager:",
-                },
-              ]);
+  returnedInquirerOutput = await inquirer.prompt([
+    {
+      name: "first_name",
+      message: "Please Enter New Employee's First Name:",
+    },
+    {
+      name: "last_name",
+      message: "Please Enter New Employee's Last Name:",
+    },
+    {
+      name: "role",
+      message: "Please Enter New Employee's Role:",
+    },
+    {
+      name: "manager",
+      message: "Please Enter New Employee's Manager:",
+    },
+  ]);
 
-        const totalRoles = await db.query("select * from role;");
+  try {
+    const totalRoles = await db.query("SELECT * FROM role");
+    const totalManagers = await db.query(
+      "SELECT * FROM employee WHERE manager_id IS NULL"
+    );
 
-        const totalManagers = await db.query(
-          "select * from employee where manager_id is null;"
-        );
+    const { first_name, last_name, role, manager } = returnedInquirerOutput;
 
-        const { first_name, last_name, role, manager } = returnedInquirerOutput;
+    const roleData = totalRoles[0].find((r) => r.job_title === role);
+    const managerData = totalManagers[0].find(
+      (m) => `${m.first_name} ${m.last_name}` === manager
+    );
 
-        const role_data = totalRoles[0].filter((r) => {
-          return r.title === role;
-        });
+    if (!roleData || !managerData) {
+      console.log("Role or manager not found.");
+      break;
+    }
 
-        const manager_data = totalManagers[0].filter((m) => {
-          return `${m.first_name} ${m.last_name}` === manager;
-        });
-
-        returnedDbRows = await db.query(
-          `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ('${first_name}', '${last_name}', ${role_data[0].id}, ${manager_data[0].id})`
-        );
-
-        break;
+    returnedDbRows = await db.query(
+      `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ('${first_name}', '${last_name}', ${roleData.id}, ${managerData.id})`
+    );
+    console.log("Employee added successfully!");
+  } catch (error) {
+    console.log("Error occurred:", error);
+  }
+  break;
 
       case "Update Employee Role":
         const currentEmployees = await db.query(`
@@ -202,7 +208,7 @@ switch (select) {
   }
 }
 
-userPrompt();
+// userPrompt();
 
 async function userPrompt() {
   try {
