@@ -1,12 +1,12 @@
-// Import and require inquirer
+// Import and require inquirer package for handling user inputs
 const inquirer = require('inquirer');
-// Import and require mysql2
+// Import and require mysql2 for MySQL database interactions
 const mysql = require('mysql2/promise');
 
 // Connect to database
-
 async function dbConnection(select) {
   try {
+        // Create a connection to the MySQL database using the provided credentials
     const db = await mysql.createConnection({
       host: "localhost",
       port: 3306,
@@ -15,16 +15,20 @@ async function dbConnection(select) {
       database: 'employee_tracker_db',
     });
 
+// Initialize variables for storing query results and user inputs
 let returnedDbRows = [];
 let returnedInquirerOutput = [];
 
+//switch statement handling actions to be executed based off user's selections
 switch (select) {
   case "View All Departments":
+    // Retrieve and display all departments from the database
     returnedDbRows = await db.query(`Select * FROM department`);
     console.table(returnedDbRows[0]);
     break;
 
     case 'View All Roles':
+// Retrieve and display all roles with their associated departments from the database      
       returnedDbRows = await db.query(`SELECT role.id, role.job_title, role.salary, department.department_name AS department 
       FROM role 
       JOIN department ON role.department_id = department.id`);
@@ -32,6 +36,7 @@ switch (select) {
       break;
 
       case 'View All Employees':
+// Retrieve and display all employees with their roles, departments, and managers from the database
         returnedDbRows = await db.query(`SELECT employee.id, employee.first_name, employee.last_name, role.job_title AS title, department.department_name AS department, role.salary AS salary, 
         CASE WHEN employee.manager_id IS NOT NULL 
         THEN CONCAT(manager_table.first_name,' ', manager_table.last_name) 
@@ -45,6 +50,7 @@ switch (select) {
         break;
 
         case 'Add a Department':
+          // Add a Department case
           returnedInquirerOutput = await inquirer.prompt([
             {
               name: 'department',
@@ -74,6 +80,7 @@ switch (select) {
           break;
 
           case 'Add a Role':
+// Prompt user to enter details for the new role
   returnedInquirerOutput = await inquirer.prompt([
     {
       name: 'roleName',
@@ -115,7 +122,8 @@ switch (select) {
   break;
 
           
-            case "Add an Employee":
+  case "Add an Employee":
+  // Prompt the user to input the new employee's first name, last name, role, and manager    
   returnedInquirerOutput = await inquirer.prompt([
     {
       name: "first_name",
@@ -136,23 +144,26 @@ switch (select) {
   ]);
 
   try {
+  // Retrieve all roles and managers from the database  
     const totalRoles = await db.query("SELECT * FROM role");
     const totalManagers = await db.query(
       "SELECT * FROM employee WHERE manager_id IS NULL"
     );
 
+    // Extract input data from the user prompt
     const { first_name, last_name, role, manager } = returnedInquirerOutput;
 
+    // Find the role and manager data based on the user input
     const roleData = totalRoles[0].find((r) => r.job_title === role);
     const managerData = totalManagers[0].find(
       (m) => `${m.first_name} ${m.last_name}` === manager
     );
-
+    // Check if the specified role or manager does not exist in the database
     if (!roleData || !managerData) {
       console.log("Role or manager not found.");
       break;
     }
-
+    // Insert the new employee with the provided details into the database
     returnedDbRows = await db.query(
       `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ('${first_name}', '${last_name}', ${roleData.id}, ${managerData.id})`
     );
@@ -162,8 +173,9 @@ switch (select) {
   }
   break;
 
-      case "Update Employee Role":
+  case "Update Employee Role":
   try {
+  // Retrieve current employees and their roles from the database
     const [currentEmployees] = await db.query(`
       SELECT id, first_name, last_name FROM employee;
     `);
@@ -171,7 +183,7 @@ switch (select) {
     const [currentRoles] = await db.query(`
       SELECT id, job_title FROM role;
     `);
-
+    // Create lists of employees and roles for inquirer prompts
     const employeeList = currentEmployees.map((employee) => {
       return {
         name: `${employee.first_name} ${employee.last_name}`,
@@ -186,6 +198,7 @@ switch (select) {
       };
     });
 
+    // Prompt the user to select an employee and a new role for update
     returnedInquirerOutput = await inquirer.prompt([
       {
         type: "list",
@@ -202,7 +215,7 @@ switch (select) {
     ]);
 
     const { employeeId, newRoleId } = returnedInquirerOutput;
-
+    // Update the employee's role in the database
     await db.query(
       `UPDATE employee SET role_id = ? WHERE id = ?`,
       [newRoleId, employeeId]
@@ -215,6 +228,7 @@ switch (select) {
   break;
 
   case 'View Employees by Manager':
+  // Prompt the user to enter the manager's name
   returnedInquirerOutput = await inquirer.prompt([
     {
       name: 'managerName',
@@ -223,6 +237,7 @@ switch (select) {
   ]);
 
   try {
+    // Retrieve the manager's ID based on the provided name
     const [managerIdResult] = await db.query(
       `SELECT id FROM employee WHERE CONCAT(first_name, ' ', last_name) = ?`,
       [returnedInquirerOutput.managerName]
@@ -230,7 +245,7 @@ switch (select) {
 
     if (managerIdResult && managerIdResult.length > 0) {
       const managerId = managerIdResult[0].id;
-
+      // Fetch employees managed by the specified manager
       returnedDbRows = await db.query(`
         SELECT employee.id, employee.first_name, employee.last_name, role.job_title AS title, department.department_name AS department, role.salary AS salary
         FROM employee
@@ -251,12 +266,13 @@ switch (select) {
 
   case 'View Employees by Department':
   try {
+    // Retrieve all departments and create choices for the user
     const [departments] = await db.query(`SELECT * FROM department`);
     const departmentChoices = departments.map((dept) => ({
       name: dept.department_name,
       value: dept.id,
     }));
-
+    // Prompt the user to choose a department
     const selectedDepartment = await inquirer.prompt([
       {
         type: 'list',
@@ -265,7 +281,7 @@ switch (select) {
         choices: departmentChoices,
       },
     ]);
-
+    // Fetch employees based on the selected department
     const [employeesByDepartment] = await db.query(`
       SELECT employee.id, employee.first_name, employee.last_name, role.job_title AS title
       FROM employee
@@ -285,8 +301,8 @@ switch (select) {
   }
 }
 
-// userPrompt();
 
+// Function to prompt users with the list of actions available
 async function userPrompt() {
   try {
     const res = await inquirer.prompt([
@@ -295,6 +311,7 @@ async function userPrompt() {
         name: "select",
         message: "What do you want to do?",
         choices: [
+// List of available actions that users can choose from
           "View All Departments",
           "View All Roles",
           "View All Employees",
@@ -309,6 +326,7 @@ async function userPrompt() {
         ],
       },
     ]);
+    // Check user's choice and execute the respective action
     if (res.select === "Quit") {
       process.exit();
     } else {
@@ -319,5 +337,5 @@ async function userPrompt() {
     console.error('An error occurred:', error);
   }
 }
-
+// Call the function to start the program and prompt the user
 userPrompt();
