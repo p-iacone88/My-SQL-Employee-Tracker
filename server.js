@@ -90,24 +90,27 @@ switch (select) {
 
             const { roleName, roleSalary, roleDepartment } = returnedInquirerOutput;
 
-            const returnDepartmentId = await db.query(`
-            SELECT IFNULL((SELECT id FROM department WHERE name = '${roleDepartment}' 'Department doesn't exist')
-            `);
-
-            const [rows] = returnDepartmentId;
-            const department_id = rows[0] !== "Department doesn't exist" ? rows[0].id : null;
-
-            if (!department_id) {
-              console.log('Please Enter a Role in an Existing Department.');
-              break;
+            try {
+              const returnDepartmentId = await db.query(`
+                SELECT IFNULL((SELECT id FROM department WHERE name = '${roleDepartment}'), -1) AS department_id
+              `);
+          
+              const department_id = returnDepartmentId[0].department_id;
+          
+              if (department_id === -1) {
+                console.log('Please Enter a Role in an Existing Department.');
+                break;
+              }
+          
+              returnedDbRows = await db.query(`
+                INSERT INTO role (job_title, salary, department_id)
+                VALUES ('${roleName}', ${roleSalary}, ${department_id})
+              `);
+            } catch (error) {
+              console.log('Error occurred:', error);
             }
-
-            returnedDbRows = await db.query(`
-            INSERT INTO role (job_title, salary, department_id)
-            VALUES ('${roleName}' '${roleSalary}', '${department_id}');
-            `);
             break;
-
+          
             case "Add an Employee":
               returnedInquirerOutput = await inquirer.prompt([
                 {
