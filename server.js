@@ -107,5 +107,126 @@ switch (select) {
               VALUES ('${roleName}' '${roleSalary}', '${department_id}');`
             );
             break;
+
+            case "Add an Employee":
+              returnedInquirerOutput = inquirer.prompt([
+                {
+                  name: "first_name",
+                  message: "Please Enter New Employee's First Name:",
+                },
+                {
+                  name: "last_name",
+                  message: "Please Enter New Employee's Last Name:",
+                },
+                {
+                  name: "role",
+                  message: "Please Enter New Employee's Role:",
+                },
+                {
+                  name: "manager",
+                  message: "Please Enter New Employee's Manager:",
+                },
+              ]);
+
+        const totalRoles = await db.query("select * from role;");
+
+        const totalManagers = await db.query(
+          "select * from employee where manager_id is null;"
+        );
+
+        const { first_name, last_name, role, manager } = returnedInquirerOutput;
+
+        const role_data = totalRoles[0].filter((r) => {
+          return r.title === role;
+        });
+
+        const manager_data = totalManagers[0].filter((m) => {
+          return `${m.first_name} ${m.last_name}` === manager;
+        });
+
+        returnedDbRows = db.query(
+          `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ('${first_name}', '${last_name}', ${role_data[0].id}, ${manager_data[0].id})`
+        );
+
+        break;
+
+      case "Update Employee Role":
+        currentEmployees = db.query(`
+                SELECT id, first_name, last_name FROM employee;`);
+
+        currentRoles = db.query(`
+                SELECT id, job_title FROM role;`);
+
+        const employeeList = currentEmployees[0].map((employee) => {
+          return {
+            name: `${employee["first_name"]} ${employee.last_name}`,
+            value: employee.id,
+          };
+        });
+
+        const roleList = currentRoles[0].map((role) => {
+          return {
+            name: role.job_title,
+            value: role.id,
+          };
+        });
+
+        returnedOutputFromInq = inquirer.prompt([
+          {
+            type: "list",
+            name: "employeeId",
+            message: "Please Choose Which Employee to Update:",
+            choices: employeeList,
+          },
+          {
+            type: "list",
+            name: "newRole",
+            message: "Please Enter Employee's New Role:",
+            choices: roleList,
+          },
+        ]);
+
+        console.log(returnedOutputFromInq);
+
+        returnedRowsFromDb = db.query(`
+                    UPDATE employee
+                    SET role_id = ${returnedInquirerOutput.newRole}
+                    WHERE employee.id = ${returnedInquirerOutput.employeeId};`);
+
+        break;
+    }
+
+function userPrompt() {
+  inquirer
+    .prompt([
+      {
+        type: "list",
+        name: "select",
+        message: "What do you want to do?",
+        choices: [
+          "View All Departments",
+          "View All Roles",
+          "View All Employees",
+          "Add a Department",
+          "Add a Role",
+          "Add an Employee",
+          "Update an Employee Role",
+          new inquirer.Separator(),
+          "Quit",
+        ],
+      },
+    ])
+    .then(async (res) => {
+      await dbConnection(res.select);
+      res.select === "Quit" ? process.exit() : userPrompt();
+    })
+    .catch((err) => {
+      if (error.isTtyError) {
+      } else {
+        err;
+      }
+    });
 }
+
+userPrompt();
 
