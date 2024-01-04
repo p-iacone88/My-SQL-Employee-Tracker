@@ -12,7 +12,7 @@ CREATE TABLE department (
 CREATE TABLE role (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     job_title VARCHAR(30) NOT NULL,
-    salary DECIMAL,
+    salary INT NOT NULL,
     department_id INT,
     FOREIGN KEY (department_id)
     REFERENCES department(id) -- link to department table

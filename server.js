@@ -5,34 +5,34 @@ const mysql = require('mysql2');
 
 // Connect to database
 
-const db = mysql.createConnection(
-  {
-    host: 'localhost',
-    port: 3306,
-    user: 'root',
-    password: 'rootroot',
-    database: 'employee_tracker_db'
-  }
-);
+async function dbConnection(select) {
+  try {
+    const db = await mysql.createConnection({
+      host: "localhost",
+      port: 3306,
+      user: 'root',
+      password: 'rootroot',
+      database: 'employee_tracker_db',
+    });
 
 let returnedDbRows = [];
 let returnedInquirerOutput = [];
 
 switch (select) {
   case "View All Departments":
-    returnedDbRows = db.query(`Select * FROM department`);
+    returnedDbRows = await db.query(`Select * FROM department`);
     console.table(returnedDbRows[0]);
     break;
 
     case 'View All Roles':
-      returnedDbRows = db.query(`SELECT role.id, role.job_title, role.salary, department.department_name AS department 
+      returnedDbRows = await db.query(`SELECT role.id, role.job_title, role.salary, department.department_name AS department 
       FROM role 
       JOIN department ON role.department_id = department.id`);
       console.table(returnedDbRows[0]);
       break;
 
       case 'View All Employees':
-        returnedDbRows = db.query(`SELECT employee.id, employee.first_name, employee.last_name, role.job_title AS title, department.department_name AS department, role.salary AS salary, 
+        returnedDbRows = await db.query(`SELECT employee.id, employee.first_name, employee.last_name, role.job_title AS title, department.department_name AS department, role.salary AS salary, 
         CASE WHEN employee.manager_id IS NOT NULL 
         THEN CONCAT(manager_table.first_name,' ', manager_table.last_name) 
         ELSE NULL END AS manager 
@@ -45,7 +45,7 @@ switch (select) {
         break;
 
         case 'Add a Department':
-          returnedInquirerOutput = inquirer.prompt([
+          returnedInquirerOutput = await inquirer.prompt([
             {
             name: 'department',
             message: 'Please enter a new department name: '
@@ -54,7 +54,7 @@ switch (select) {
 
           try {
             // Check if the department exists
-            const existingDepartment = await db.query(
+            const existingDepartment = db.query(
               `SELECT id FROM department WHERE name = '${returnedInquirerOutput.department}'`
             );
           
@@ -84,32 +84,32 @@ switch (select) {
               },
               {
                 name: 'roleDepartment',
-                message: 'Please Enter Department of New Role : ',
+                message: 'Please Enter Department of New Role: ',
               },
             ]);
 
             const { roleName, roleSalary, roleDepartment } = returnedInquirerOutput;
 
-            const returnDepartmentId = db.query(`
-            SELECT IF NULL((SELECT id FROM department WHERE name = '${roleDepartment}'), 'Department doesn't exist')
+            const returnDepartmentId = await db.query(`
+            SELECT IFNULL((SELECT id FROM department WHERE name = '${roleDepartment}' 'Department doesn't exist')
             `);
 
             const [rows] = returnDepartmentId;
-            const department_id = Object.values(rows[0]) [0];
+            const department_id = rows[0] !== "Department doesn't exist" ? rows[0].id : null;
 
-            if (department_id === 'Department Does Not Exist') {
+            if (!department_id) {
               console.log('Please Enter a Role in an Existing Department.');
               break;
             }
 
-            returnedDbRows = db.query(
-              `INSERT INTO role (job_title, salary, department_id)
-              VALUES ('${roleName}' '${roleSalary}', '${department_id}');`
-            );
+            returnedDbRows = await db.query(`
+            INSERT INTO role (job_title, salary, department_id)
+            VALUES ('${roleName}' '${roleSalary}', '${department_id}');
+            `);
             break;
 
             case "Add an Employee":
-              returnedInquirerOutput = inquirer.prompt([
+              returnedInquirerOutput = await inquirer.prompt([
                 {
                   name: "first_name",
                   message: "Please Enter New Employee's First Name:",
@@ -144,22 +144,22 @@ switch (select) {
           return `${m.first_name} ${m.last_name}` === manager;
         });
 
-        returnedDbRows = db.query(
+        returnedDbRows = await db.query(
           `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ('${first_name}', '${last_name}', ${role_data[0].id}, ${manager_data[0].id})`
         );
 
         break;
 
       case "Update Employee Role":
-        currentEmployees = db.query(`
+        const currentEmployees = await db.query(`
                 SELECT id, first_name, last_name FROM employee;`);
 
-        currentRoles = db.query(`
+        const currentRoles = await db.query(`
                 SELECT id, job_title FROM role;`);
 
         const employeeList = currentEmployees[0].map((employee) => {
           return {
-            name: `${employee["first_name"]} ${employee.last_name}`,
+            name: `${employee.first_name} ${employee.last_name}`,
             value: employee.id,
           };
         });
@@ -171,7 +171,7 @@ switch (select) {
           };
         });
 
-        returnedOutputFromInq = inquirer.prompt([
+        returnedInquirerOutput = await inquirer.prompt([
           {
             type: "list",
             name: "employeeId",
@@ -186,19 +186,24 @@ switch (select) {
           },
         ]);
 
-        console.log(returnedOutputFromInq);
+        console.log(returnedInquirerOutput);
 
-        returnedRowsFromDb = db.query(`
-                    UPDATE employee
-                    SET role_id = ${returnedInquirerOutput.newRole}
-                    WHERE employee.id = ${returnedInquirerOutput.employeeId};`);
-
+        returnedDbRows = await db.query(`
+        UPDATE employee
+        SET role_id = ${returnedInquirerOutput.newRole}
+        WHERE employee.id = ${returnedInquirerOutput.employeeId};`);
         break;
     }
+  } catch (err) {
+    console.log(err);
+  }
+}
 
-function userPrompt() {
-  inquirer
-    .prompt([
+userPrompt();
+
+async function userPrompt() {
+  try {
+    const res = await inquirer.prompt([
       {
         type: "list",
         name: "select",
@@ -215,18 +220,16 @@ function userPrompt() {
           "Quit",
         ],
       },
-    ])
-    .then(async (res) => {
+    ]);
+    if (res.select === "Quit") {
+      process.exit();
+    } else {
       await dbConnection(res.select);
-      res.select === "Quit" ? process.exit() : userPrompt();
-    })
-    .catch((err) => {
-      if (error.isTtyError) {
-      } else {
-        err;
-      }
-    });
+      await userPrompt();
+    }
+  } catch (error) {
+    console.error('An error occurred:', error);
+  }
 }
 
 userPrompt();
-

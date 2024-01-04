@@ -4,7 +4,7 @@ VALUES ('Recording Studio'),
        ('Mastering Studio'),
        ('Equipment'),
        ('Marketing'),
-       ('Maintenance')
+       ('Maintenance');
 
 INSERT INTO role (job_title, salary, department_id)
 VALUES ('Head Recording Engineer', 75000, 1),
@@ -18,15 +18,15 @@ VALUES ('Head Recording Engineer', 75000, 1),
        ('Equipment Maintenance Tech', 38000, 4),  
        ('Studio Rental Manager', 55000, 5),   
        ('Salesperson', 50000, 5),  
-       ('Janitor', 38000, 6),  
+       ('Janitor', 38000, 6);
 
 INSERT INTO employee (first_name, last_name, role_id, manager_id)
 VALUES ('Brian', 'Wilson', 1, NULL),
-       ('Dennis', 'Wilson', 2, 4),
-       ('Carl', 'Wilson', 3, 7),
-       ('Mike', 'Love', 4, 1),
+       ('Dennis', 'Wilson', 2, 1),
+       ('Carl', 'Wilson', 3, 2),
+       ('Mike', 'Love', 4, NULL),
        ('Alan', 'Jardine', 5, 4),
-       ('Bruce', 'Johnston', 6, 7),
+       ('Bruce', 'Johnston', 6, 2),
        ('David', 'Marks', 7, 6),
        ('Blondie', 'Chaplin', 8, 6),
-       ('Ricky', 'Fataar', 9, NULL)
+       ('Ricky', 'Fataar', 9, NULL);
